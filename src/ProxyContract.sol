@@ -3,6 +3,8 @@ pragma solidity ^0.8.19;
 
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IRedeemingBondingCurveBase_v1} from "./interfaces/IRedeemingBondingCurveBase_v1.sol";
+import {IBondingCurveBase_v1} from "./interfaces/IBondingCurveBase_v1.sol";
 
 /**
  * @title FlexibleProxyContract
@@ -32,6 +34,7 @@ contract FlexibleProxyContract {
         require(_isContract(_collateralToken), "Collateral token address is not a contract");
 
         IERC20 collateralToken = IERC20(_collateralToken);
+        IBondingCurveBase_v1 bondingCurve = IBondingCurveBase_v1(_bondingCurve);
 
         // Transfer collateral tokens from caller to this contract
         collateralToken.safeTransferFrom(msg.sender, address(this), _depositAmount);
@@ -39,26 +42,7 @@ contract FlexibleProxyContract {
         // Approve target contract to spend collateral tokens
         collateralToken.safeIncreaseAllowance(_bondingCurve, _depositAmount);
 
-        // Call buyFor(msg.sender, _depositAmount, _minAmountOut)
-        bytes memory callData = abi.encodeWithSelector(
-            0x935b7dbd, // buyFor(address,uint256,uint256)
-            msg.sender,
-            _depositAmount,
-            _minAmountOut
-        );
-
-        (bool success, bytes memory returnData) = _bondingCurve.call(callData);
-
-        if (!success) {
-            if (returnData.length > 0) {
-                assembly {
-                    let returndata_size := mload(returnData)
-                    revert(add(32, returnData), returndata_size)
-                }
-            } else {
-                revert CallFailed(_bondingCurve, "buyFor call failed or function does not exist");
-            }
-        }
+        bondingCurve.buyFor(msg.sender, _depositAmount, _minAmountOut);
 
         require(collateralToken.balanceOf(address(this)) == 0, "Collateral tokens not fully consumed");
     }
@@ -79,34 +63,14 @@ contract FlexibleProxyContract {
         require(_isContract(_tokenToSell), "Token to sell address is not a contract");
 
         IERC20 tokenToSell = IERC20(_tokenToSell);
+        IRedeemingBondingCurveBase_v1 redeemingBondingCurve = IRedeemingBondingCurveBase_v1(_bondingCurve);
 
         // Transfer tokens from caller to this contract
         tokenToSell.safeTransferFrom(msg.sender, address(this), _depositAmount);
 
         // Approve target contract to spend tokens to sell
         tokenToSell.safeIncreaseAllowance(_bondingCurve, _depositAmount);
-
-        // Call sellTo(msg.sender, _depositAmount, _minAmountOut)
-        bytes memory callData = abi.encodeWithSelector(
-            0xc5b27dde, // sellTo(address,uint256,uint256)
-            msg.sender,
-            _depositAmount,
-            _minAmountOut
-        );
-
-        (bool success, bytes memory returnData) = _bondingCurve.call(callData);
-
-        if (!success) {
-            if (returnData.length > 0) {
-                assembly {
-                    let returndata_size := mload(returnData)
-                    revert(add(32, returnData), returndata_size)
-                }
-            } else {
-                revert CallFailed(_bondingCurve, "sellTo call failed or function does not exist");
-            }
-        }
-
+        redeemingBondingCurve.sellTo(msg.sender, _depositAmount, _minAmountOut);
         require(tokenToSell.balanceOf(address(this)) == 0, "Tokens not fully consumed");
     }
 
