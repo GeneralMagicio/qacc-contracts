@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "forge-std/Test.sol";
-import {FlexibleProxyContract} from "../src/ProxyContract.sol";
+import {FlexibleProxyContractTest} from "./ProxyContractTest.sol";
 import {MockBondingCurve} from "../src/MockBondingCurve.sol";
 import {MockERC20} from "../src/MockERC20.sol";
 
-contract FlexibleProxyContractTest is Test {
-    FlexibleProxyContract proxyContract;
+contract MockProxyContractTest is FlexibleProxyContractTest {
     MockBondingCurve bondingCurve;
     MockERC20 mockCollateralToken;
     MockERC20 mockTokenToSell;
@@ -15,12 +13,12 @@ contract FlexibleProxyContractTest is Test {
     address addr1;
     address addr2;
 
-    function setUp() public {
+    function setUp() public override {
+        super.setUp();
         owner = address(this);
         addr1 = makeAddr("addr1");
         addr2 = makeAddr("addr2");
 
-        proxyContract = new FlexibleProxyContract();
         mockCollateralToken = new MockERC20("Mock Collateral", "MCOL");
         mockTokenToSell = new MockERC20("Mock Token", "MTOK");
         bondingCurve = new MockBondingCurve(address(mockCollateralToken), address(mockTokenToSell));
