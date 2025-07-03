@@ -1,26 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-/**
- * @dev Interface for ERC20 token operations
- */
-interface IERC20 {
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
-
-    function approve(address spender, uint256 amount) external returns (bool);
-
-    function transfer(address to, uint256 amount) external returns (bool);
-
-    function balanceOf(address account) external view returns (uint256);
-
-    function allowance(address owner, address spender) external view returns (uint256);
-}
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title FlexibleProxyContract
  * @dev A flexible proxy contract that can call buyFor and sellTo methods on any target contract
  */
 contract FlexibleProxyContract {
+    using SafeERC20 for IERC20;
+
     error NotAContract(address target);
     error CallFailed(address target, string reason);
     error TransferFailed(address token, address from, address to, uint256 amount);
@@ -44,16 +34,10 @@ contract FlexibleProxyContract {
         IERC20 collateralToken = IERC20(_collateralToken);
 
         // Transfer collateral tokens from caller to this contract
-        bool transferSuccess = collateralToken.transferFrom(msg.sender, address(this), _depositAmount);
-        if (!transferSuccess) {
-            revert TransferFailed(_collateralToken, msg.sender, address(this), _depositAmount);
-        }
+        collateralToken.safeTransferFrom(msg.sender, address(this), _depositAmount);
 
         // Approve target contract to spend collateral tokens
-        bool approveSuccess = collateralToken.approve(_targetContract, _depositAmount);
-        if (!approveSuccess) {
-            revert ApprovalFailed(_collateralToken, _targetContract, _depositAmount);
-        }
+        collateralToken.safeIncreaseAllowance(_targetContract, _depositAmount);
 
         // Call buyFor(msg.sender, _depositAmount, _minAmountOut)
         bytes memory callData = abi.encodeWithSelector(
@@ -95,16 +79,10 @@ contract FlexibleProxyContract {
         IERC20 tokenToSell = IERC20(_tokenToSell);
 
         // Transfer tokens from caller to this contract
-        bool transferSuccess = tokenToSell.transferFrom(msg.sender, address(this), _depositAmount);
-        if (!transferSuccess) {
-            revert TransferFailed(_tokenToSell, msg.sender, address(this), _depositAmount);
-        }
+        tokenToSell.safeTransferFrom(msg.sender, address(this), _depositAmount);
 
         // Approve target contract to spend tokens to sell
-        bool approveSuccess = tokenToSell.approve(_targetContract, _depositAmount);
-        if (!approveSuccess) {
-            revert ApprovalFailed(_tokenToSell, _targetContract, _depositAmount);
-        }
+        tokenToSell.safeIncreaseAllowance(_targetContract, _depositAmount);
 
         // Call sellTo(msg.sender, _depositAmount, _minAmountOut)
         bytes memory callData = abi.encodeWithSelector(
