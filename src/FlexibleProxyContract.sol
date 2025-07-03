@@ -13,7 +13,7 @@ import {Initializable} from "openzeppelin-contracts/contracts/proxy/utils/Initia
  * @custom:oz-upgrades-from FlexibleProxyContract
  */
 contract FlexibleProxyContract is Initializable {
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     using SafeERC20 for IERC20;
 
@@ -23,8 +23,6 @@ contract FlexibleProxyContract is Initializable {
     error ApprovalFailed(address token, address spender, uint256 amount);
 
     function initialize() public initializer {}
-
-    function test() public view {}
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
