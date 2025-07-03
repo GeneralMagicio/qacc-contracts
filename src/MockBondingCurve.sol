@@ -2,12 +2,15 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title MockBondingCurve
  * @dev A mock contract that implements the buyFor and sellTo functions for testing
  */
 contract MockBondingCurve {
+    using SafeERC20 for IERC20;
+
     event BuyForCalled(address buyer, uint256 depositAmount, uint256 minAmountOut);
     event SellToCalled(address seller, uint256 depositAmount, uint256 minAmountOut);
 
@@ -31,8 +34,8 @@ contract MockBondingCurve {
      * @param _minAmountOut The minimum amount to receive
      */
     function buyFor(address _buyer, uint256 _depositAmount, uint256 _minAmountOut) external {
-        collateralToken.transferFrom(msg.sender, address(this), _depositAmount);
-        tokenToSell.transfer(_buyer, _minAmountOut); // Mock transfer of token to sell
+        collateralToken.safeTransferFrom(msg.sender, address(this), _depositAmount);
+        tokenToSell.safeTransfer(_buyer, _minAmountOut); // Mock transfer of token to sell
         emit BuyForCalled(_buyer, _depositAmount, _minAmountOut);
         // Mock successful execution
     }
@@ -44,8 +47,8 @@ contract MockBondingCurve {
      * @param _minAmountOut The minimum amount to receive
      */
     function sellTo(address _seller, uint256 _depositAmount, uint256 _minAmountOut) external {
-        tokenToSell.transferFrom(msg.sender, address(this), _depositAmount);
-        collateralToken.transfer(_seller, _minAmountOut); // Mock transfer of collateral token
+        tokenToSell.safeTransferFrom(msg.sender, address(this), _depositAmount);
+        collateralToken.safeTransfer(_seller, _minAmountOut); // Mock transfer of collateral token
         emit SellToCalled(_seller, _depositAmount, _minAmountOut);
     }
 }
