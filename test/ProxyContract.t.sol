@@ -3,12 +3,12 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import {FlexibleProxyContract} from "../src/ProxyContract.sol";
-import {MockTargetContract} from "../src/MockTargetContract.sol";
+import {MockBondingCurve} from "../src/MockBondingCurve.sol";
 import {MockERC20} from "../src/MockERC20.sol";
 
 contract FlexibleProxyContractTest is Test {
     FlexibleProxyContract proxyContract;
-    MockTargetContract mockTargetContract;
+    MockBondingCurve bondingCurve;
     MockERC20 mockCollateralToken;
     MockERC20 mockTokenToSell;
     address owner;
@@ -21,13 +21,12 @@ contract FlexibleProxyContractTest is Test {
         addr2 = makeAddr("addr2");
 
         proxyContract = new FlexibleProxyContract();
-        mockTargetContract = new MockTargetContract();
-        mockCollateralToken = new MockERC20("Mock Collateral", "MCOL", 18);
-        mockTokenToSell = new MockERC20("Mock Token", "MTOK", 18);
+        mockCollateralToken = new MockERC20("Mock Collateral", "MCOL");
+        mockTokenToSell = new MockERC20("Mock Token", "MTOK");
+        bondingCurve = new MockBondingCurve(address(mockCollateralToken), address(mockTokenToSell));
 
-        // Transfer some tokens to addr1 for testing
-        mockCollateralToken.transfer(addr1, 1000 ether);
-        mockTokenToSell.transfer(addr1, 1000 ether);
+        mockCollateralToken.mint(address(bondingCurve), 10000 ether);
+        mockTokenToSell.mint(address(bondingCurve), 10000 ether);
     }
 
     function testDeployment() public view {
@@ -46,17 +45,18 @@ contract FlexibleProxyContractTest is Test {
         uint256 depositAmount = 1 ether;
         uint256 minAmountOut = 0.95 ether;
         vm.expectRevert(bytes("Collateral token cannot be zero address"));
-        proxyContract.buy(address(mockTargetContract), address(0), depositAmount, minAmountOut);
+        proxyContract.buy(address(bondingCurve), address(0), depositAmount, minAmountOut);
     }
 
-    function testBuyCallsBuyForOnTargetContract() public {
+    function testBuyOnBondingCurve() public {
         uint256 depositAmount = 1 ether;
         uint256 minAmountOut = 0.95 ether;
         // Approve proxy to spend tokens from addr1
         vm.startPrank(addr1);
+        mockCollateralToken.mint(addr1, depositAmount); // Mint tokens to addr1 for testing
         mockCollateralToken.approve(address(proxyContract), depositAmount);
         // Should not revert
-        proxyContract.buy(address(mockTargetContract), address(mockCollateralToken), depositAmount, minAmountOut);
+        proxyContract.buy(address(bondingCurve), address(mockCollateralToken), depositAmount, minAmountOut);
         vm.stopPrank();
     }
 
@@ -72,23 +72,24 @@ contract FlexibleProxyContractTest is Test {
         uint256 depositAmount = 1 ether;
         uint256 minAmountOut = 0.95 ether;
         vm.expectRevert(bytes("Token to sell cannot be zero address"));
-        proxyContract.sell(address(mockTargetContract), address(0), depositAmount, minAmountOut);
+        proxyContract.sell(address(bondingCurve), address(0), depositAmount, minAmountOut);
     }
 
-    function testSellCallsSellToOnTargetContract() public {
+    function testSellOnBondingCurve() public {
         uint256 depositAmount = 1 ether;
         uint256 minAmountOut = 0.95 ether;
         // Approve proxy to spend tokens from addr1
         vm.startPrank(addr1);
+        mockTokenToSell.mint(addr1, depositAmount); // Mint tokens to addr1 for testing
         mockTokenToSell.approve(address(proxyContract), depositAmount);
         // Should not revert
-        proxyContract.sell(address(mockTargetContract), address(mockTokenToSell), depositAmount, minAmountOut);
+        proxyContract.sell(address(bondingCurve), address(mockTokenToSell), depositAmount, minAmountOut);
         vm.stopPrank();
     }
 
     // // --- isContract Function ---
     // function testIsContractReturnsTrueForContracts() public {
-    //     assertTrue(proxyContract.isContract(address(mockTargetContract)));
+    //     assertTrue(proxyContract.isContract(address(bondingCurve)));
     //     assertTrue(proxyContract.isContract(address(mockCollateralToken)));
     // }
 
