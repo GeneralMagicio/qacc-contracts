@@ -116,11 +116,6 @@ contract FlexibleProxyContract {
         return true;
     }
 
-    // Helper to decode string from bytes (for staticcall)
-    function _decodeString(bytes memory data) public pure returns (string memory) {
-        return abi.decode(data, (string));
-    }
-
     function _isContract(address _addr) internal view returns (bool) {
         return _addr.code.length > 0;
     }
