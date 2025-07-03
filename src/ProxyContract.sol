@@ -18,36 +18,36 @@ contract FlexibleProxyContract {
 
     /**
      * @dev Proxy function to call buyFor method on any target contract
-     * @param _targetContract The address of the contract to call
-     * @param _collateralToken The address of the collateral token to use for buying
-     * @param _depositAmount The amount to deposit for buying
-     * @param _minAmountOut The minimum amount to receive
+     * @param targetContract The address of the contract to call
+     * @param collateralToken The address of the collateral token to use for buying
+     * @param depositAmount The amount to deposit for buying
+     * @param minAmountOut The minimum amount to receive
      */
-    function buy(address _targetContract, address _collateralToken, uint256 _depositAmount, uint256 _minAmountOut)
+    function buy(address targetContract, address collateralToken, uint256 depositAmount, uint256 minAmountOut)
         external
     {
-        require(_targetContract != address(0), "Target contract cannot be zero address");
-        require(_collateralToken != address(0), "Collateral token cannot be zero address");
-        require(_isContract(_targetContract), "Target address is not a contract");
-        require(_isContract(_collateralToken), "Collateral token address is not a contract");
+        require(targetContract != address(0), "Target contract cannot be zero address");
+        require(collateralToken != address(0), "Collateral token cannot be zero address");
+        require(_isContract(targetContract), "Target address is not a contract");
+        require(_isContract(collateralToken), "Collateral token address is not a contract");
 
-        IERC20 collateralToken = IERC20(_collateralToken);
+        IERC20 _collateralToken = IERC20(collateralToken);
 
         // Transfer collateral tokens from caller to this contract
-        collateralToken.safeTransferFrom(msg.sender, address(this), _depositAmount);
+        _collateralToken.safeTransferFrom(msg.sender, address(this), depositAmount);
 
         // Approve target contract to spend collateral tokens
-        collateralToken.safeIncreaseAllowance(_targetContract, _depositAmount);
+        _collateralToken.safeIncreaseAllowance(targetContract, depositAmount);
 
-        // Call buyFor(msg.sender, _depositAmount, _minAmountOut)
+        // Call buyFor(msg.sender, depositAmount, minAmountOut)
         bytes memory callData = abi.encodeWithSelector(
             0x935b7dbd, // buyFor(address,uint256,uint256)
             msg.sender,
-            _depositAmount,
-            _minAmountOut
+            depositAmount,
+            minAmountOut
         );
 
-        (bool success, bytes memory returnData) = _targetContract.call(callData);
+        (bool success, bytes memory returnData) = targetContract.call(callData);
 
         if (!success) {
             if (returnData.length > 0) {
@@ -56,43 +56,41 @@ contract FlexibleProxyContract {
                     revert(add(32, returnData), returndata_size)
                 }
             } else {
-                revert CallFailed(_targetContract, "buyFor call failed or function does not exist");
+                revert CallFailed(targetContract, "buyFor call failed or function does not exist");
             }
         }
     }
 
     /**
      * @dev Proxy function to call sellTo method on any target contract
-     * @param _targetContract The address of the contract to call
-     * @param _tokenToSell The address of the token to sell
-     * @param _depositAmount The amount to deposit for selling
-     * @param _minAmountOut The minimum amount to receive
+     * @param targetContract The address of the contract to call
+     * @param tokenToSell The address of the token to sell
+     * @param depositAmount The amount to deposit for selling
+     * @param minAmountOut The minimum amount to receive
      */
-    function sell(address _targetContract, address _tokenToSell, uint256 _depositAmount, uint256 _minAmountOut)
-        external
-    {
-        require(_targetContract != address(0), "Target contract cannot be zero address");
-        require(_tokenToSell != address(0), "Token to sell cannot be zero address");
-        require(_isContract(_targetContract), "Target address is not a contract");
-        require(_isContract(_tokenToSell), "Token to sell address is not a contract");
+    function sell(address targetContract, address tokenToSell, uint256 depositAmount, uint256 minAmountOut) external {
+        require(targetContract != address(0), "Target contract cannot be zero address");
+        require(tokenToSell != address(0), "Token to sell cannot be zero address");
+        require(_isContract(targetContract), "Target address is not a contract");
+        require(_isContract(tokenToSell), "Token to sell address is not a contract");
 
-        IERC20 tokenToSell = IERC20(_tokenToSell);
+        IERC20 _tokenToSell = IERC20(tokenToSell);
 
         // Transfer tokens from caller to this contract
-        tokenToSell.safeTransferFrom(msg.sender, address(this), _depositAmount);
+        _tokenToSell.safeTransferFrom(msg.sender, address(this), depositAmount);
 
         // Approve target contract to spend tokens to sell
-        tokenToSell.safeIncreaseAllowance(_targetContract, _depositAmount);
+        _tokenToSell.safeIncreaseAllowance(targetContract, depositAmount);
 
-        // Call sellTo(msg.sender, _depositAmount, _minAmountOut)
+        // Call sellTo(msg.sender, depositAmount, minAmountOut)
         bytes memory callData = abi.encodeWithSelector(
             0xc5b27dde, // sellTo(address,uint256,uint256)
             msg.sender,
-            _depositAmount,
-            _minAmountOut
+            depositAmount,
+            minAmountOut
         );
 
-        (bool success, bytes memory returnData) = _targetContract.call(callData);
+        (bool success, bytes memory returnData) = targetContract.call(callData);
 
         if (!success) {
             if (returnData.length > 0) {
@@ -101,19 +99,9 @@ contract FlexibleProxyContract {
                     revert(add(32, returnData), returndata_size)
                 }
             } else {
-                revert CallFailed(_targetContract, "sellTo call failed or function does not exist");
+                revert CallFailed(targetContract, "sellTo call failed or function does not exist");
             }
         }
-    }
-
-    /**
-     * @dev Checks if the target contract is a contract
-     * @param target The address to check
-     * @return isInverter True if the contract is a contract
-     */
-    function isContract(address target) external view returns (bool isInverter) {
-        if (!_isContract(target)) return false;
-        return true;
     }
 
     function _isContract(address _addr) internal view returns (bool) {

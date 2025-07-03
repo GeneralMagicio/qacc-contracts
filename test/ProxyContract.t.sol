@@ -30,7 +30,7 @@ contract FlexibleProxyContractTest is Test {
         mockTokenToSell.transfer(addr1, 1000 ether);
     }
 
-    function testDeployment() public {
+    function testDeployment() public view {
         assertTrue(address(proxyContract) != address(0));
     }
 
@@ -86,14 +86,14 @@ contract FlexibleProxyContractTest is Test {
         vm.stopPrank();
     }
 
-    // --- isContract Function ---
-    function testIsContractReturnsTrueForContracts() public {
-        assertTrue(proxyContract.isContract(address(mockTargetContract)));
-        assertTrue(proxyContract.isContract(address(mockCollateralToken)));
-    }
+    // // --- isContract Function ---
+    // function testIsContractReturnsTrueForContracts() public {
+    //     assertTrue(proxyContract.isContract(address(mockTargetContract)));
+    //     assertTrue(proxyContract.isContract(address(mockCollateralToken)));
+    // }
 
-    function testIsContractReturnsFalseForEOA() public {
-        assertFalse(proxyContract.isContract(addr1));
-        assertFalse(proxyContract.isContract(addr2));
-    }
+    // function testIsContractReturnsFalseForEOA() public {
+    //     assertFalse(proxyContract.isContract(addr1));
+    //     assertFalse(proxyContract.isContract(addr2));
+    // }
 }
