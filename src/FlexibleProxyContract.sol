@@ -6,14 +6,15 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 import {IRedeemingBondingCurveBase_v1} from "./interfaces/IRedeemingBondingCurveBase_v1.sol";
 import {IBondingCurveBase_v1} from "./interfaces/IBondingCurveBase_v1.sol";
 import {Initializable} from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+import {ReentrancyGuard} from "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title FlexibleProxyContract
  * @dev A flexible proxy contract that can call buyFor and sellTo methods on any target contract
  * @custom:oz-upgrades-from FlexibleProxyContract
  */
-contract FlexibleProxyContract is Initializable {
-    string public constant VERSION = "1.0.1";
+contract FlexibleProxyContract is Initializable, ReentrancyGuard {
+    string public constant VERSION = "1.0.2";
 
     using SafeERC20 for IERC20;
 
@@ -38,11 +39,13 @@ contract FlexibleProxyContract is Initializable {
      */
     function buy(address _bondingCurve, address _collateralToken, uint256 _depositAmount, uint256 _minAmountOut)
         external
+        nonReentrant
     {
         require(_bondingCurve != address(0), "Target contract cannot be zero address");
         require(_collateralToken != address(0), "Collateral token cannot be zero address");
         require(_isContract(_bondingCurve), "Target address is not a contract");
         require(_isContract(_collateralToken), "Collateral token address is not a contract");
+        require(_depositAmount > 0, "Deposit amount must be greater than 0");
 
         IERC20 collateralToken = IERC20(_collateralToken);
         IBondingCurveBase_v1 bondingCurve = IBondingCurveBase_v1(_bondingCurve);
@@ -67,11 +70,13 @@ contract FlexibleProxyContract is Initializable {
      */
     function sell(address _bondingCurve, address _tokenToSell, uint256 _depositAmount, uint256 _minAmountOut)
         external
+        nonReentrant
     {
         require(_bondingCurve != address(0), "Target contract cannot be zero address");
         require(_tokenToSell != address(0), "Token to sell cannot be zero address");
         require(_isContract(_bondingCurve), "Target address is not a contract");
         require(_isContract(_tokenToSell), "Token to sell address is not a contract");
+        require(_depositAmount > 0, "Deposit amount must be greater than 0");
 
         IERC20 tokenToSell = IERC20(_tokenToSell);
         IRedeemingBondingCurveBase_v1 redeemingBondingCurve = IRedeemingBondingCurveBase_v1(_bondingCurve);
